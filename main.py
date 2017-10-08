@@ -56,7 +56,34 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :return: The Tensor for the last layer of output
     """
     # TODO: Implement function
-    return None
+
+    # 1x1 convolutions of input layers
+    conv_1x1_3 = tf.layers.conv2d(vgg_layer3_out, num_classes, 1, padding='same',
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv_1x1_4 = tf.layers.conv2d(vgg_layer4_out, num_classes, 1, padding='same',
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+    conv_1x1_7 = tf.layers.conv2d(vgg_layer7_out, num_classes, 1, padding='same',
+        kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # Add Decoder with upsample and skip connections:
+    # 1. upsample the input to the original image size
+    decoderLayer_1 = tf.layers.conv2d_transpose(conv_1x1_7, num_classes, 4, strides=(2, 2), 
+         padding= 'same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # 2. skip Connections
+    # make sure the shapes are the same!
+    decoderLayer_2 = tf.add(decoderLayer_1, conv_1x1_4)
+
+    # 3. another transposed convolution layer
+    decoderLayer_3 = tf.layers.conv2d_transpose(decoderLayer_2, num_classes, 4, strides=(2, 2),
+        padding= 'same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    # 4. third pooling layer output
+    decoderLayer_4 = tf.add(decoderLayer_3, conv_1x1_3)
+    decoderLayer_5 = tf.layers.conv2d_transpose(decoderLayer_4, num_classes, 16, strides=(8, 8), 
+        padding= 'same', kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+    return decoderLayer_5
 tests.test_layers(layers)
 
 
